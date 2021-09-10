@@ -1,0 +1,38 @@
+{
+  "name": "rebbu-api",
+  "version": "1.0.0",
+  "description": "Backend for packing management software Rebbu",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "format": "prettier --write ./src/**/*",
+    "start": "ts-node ./src/server.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/roopertti/rebbu-api.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/roopertti/rebbu-api/issues"
+  },
+  "homepage": "https://github.com/roopertti/rebbu-api#readme",
+  "devDependencies": {
+    "@types/node": "^16.9.0",
+    "prettier": "^2.4.0",
+    "prisma": "3.0.2",
+    "ts-node": "^10.2.1",
+    "typescript": "^4.4.2"
+  },
+  "dependencies": {
+    "@prisma/client": "^3.0.2",
+    "apollo-server": "^3.3.0",
+    "class-validator": "^0.13.1",
+    "graphql": "^15.5.3",
+    "reflect-metadata": "^0.1.13",
+    "type-graphql": "^1.1.1",
+    "typedi": "^0.10.0"
+  }
+}

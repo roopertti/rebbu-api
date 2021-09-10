@@ -1,0 +1,82 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id          Int           @id @default(autoincrement())
+  name        String        @db.VarChar(255)
+  email       String        @db.VarChar(255) @unique
+  googleId    String        @db.VarChar(255) @unique
+  created     DateTime      @default(now())
+  trips       Trip[]
+}
+
+model Trip {
+  id          Int           @id @default(autoincrement())
+  creatorId   Int
+  creator     User          @relation(fields: [creatorId], references: [id])
+  name        String        @db.VarChar(255)
+  description String?       @db.Text
+  location    String?       @db.VarChar(255)
+  start       DateTime
+  end         DateTime
+  created     DateTime      @default(now())
+  updated     DateTime      @updatedAt
+  packLists   PackList[]
+}
+
+enum PackListType {
+  PRIVATE
+  PUBLIC
+  SHARED
+}
+
+model PackList {
+  id              Int             @id @default(autoincrement())
+  tripId          Int
+  trip            Trip            @relation(fields: [tripId], references: [id])
+  name            String?         @db.VarChar(255)
+  type            PackListType
+  version         Int
+  created         DateTime        @default(now())
+  updated         DateTime        @updatedAt
+  itemPlacements  ItemPlacement[]
+}
+
+enum ItemType {
+  SLEEPING
+  SHELTER
+  HYGIENE
+  CLOTHING
+  TOOLS
+  STORAGE
+  ELECTRONICS
+  ENTERTAINMENT
+  MUSIC
+  NUTRITION
+}
+
+model Item {
+  id          Int             @id @default(autoincrement())
+  type        ItemType?
+  name        String          @db.VarChar(255)
+  weight      Float?
+  description String?         @db.Text
+  placements  ItemPlacement[]
+}
+
+model ItemPlacement {
+  id          Int           @id @default(autoincrement())
+  packListId  Int
+  packList    PackList      @relation(fields: [packListId], references: [id])
+  itemId      Int
+  item        Item          @relation(fields: [itemId], references: [id])
+}

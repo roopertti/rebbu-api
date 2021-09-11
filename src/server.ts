@@ -1,15 +1,20 @@
 import 'reflect-metadata'
-import { ApolloServer } from 'apollo-server'
-import { Resolver, Query, buildSchema } from 'type-graphql'
+import { ApolloServer } from 'apollo-server-express'
+import { buildSchema } from 'type-graphql'
 import { PrismaClient } from '@prisma/client'
-import { Container, Service } from 'typedi'
+import { Container } from 'typedi'
+import express from 'express'
 
-import { User } from './schemas/User'
 import { UserResolver } from './resolvers/UserResolver'
+import googleOAuthRoutes from './auth/googleOAuth'
 
+const app = express()
+
+app.use('/auth', googleOAuthRoutes)
+
+// Create Prisma client, register it as a dependency
 const prismaClient = new PrismaClient()
-
-Container.set({ id: "PRISMA_CLIENT", factory: () => prismaClient })
+Container.set({ id: 'PRISMA_CLIENT', factory: () => prismaClient })
 
 const bootstrap = async () => {
   const schema = await buildSchema({
@@ -18,7 +23,10 @@ const bootstrap = async () => {
   })
 
   const server = new ApolloServer({ schema })
-  server.listen({ port: 4000 })
+  await server.start()
+  server.applyMiddleware({ app })
+
+  app.listen({ port: 4000 })
   console.log(`Listening to port 4000`)
 }
 

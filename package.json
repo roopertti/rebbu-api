@@ -29,7 +29,10 @@
   "dependencies": {
     "@prisma/client": "^3.0.2",
     "apollo-server": "^3.3.0",
+    "apollo-server-express": "^3.3.0",
     "class-validator": "^0.13.1",
+    "express": "^4.17.1",
+    "google-auth-library": "^7.9.1",
     "graphql": "^15.5.3",
     "reflect-metadata": "^0.1.13",
     "type-graphql": "^1.1.1",

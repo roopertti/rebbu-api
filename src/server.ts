@@ -4,17 +4,27 @@ import { buildSchema } from 'type-graphql'
 import { PrismaClient } from '@prisma/client'
 import { Container } from 'typedi'
 import express from 'express'
+import { createClient } from 'redis'
 
 import { UserResolver } from './resolvers/UserResolver'
 import googleOAuthRoutes from './auth/googleOAuth'
+import { authorizeToken } from './auth/jwt'
 
 const app = express()
 
 app.use('/auth', googleOAuthRoutes)
 
-// Create Prisma client, register it as a dependency
+// Create and register Prisma client
 const prismaClient = new PrismaClient()
 Container.set({ id: 'PRISMA_CLIENT', factory: () => prismaClient })
+
+// Create and register Redis client
+const initRedis = async () => {
+  const client = createClient()
+  client.on('error', (err) => console.error(`Redis error: ${err}`))
+  await client.connect()
+  Container.set({ id: 'REDIS_CLIENT', factory: () => client })
+}
 
 const bootstrap = async () => {
   const schema = await buildSchema({
@@ -22,7 +32,23 @@ const bootstrap = async () => {
     container: Container
   })
 
-  const server = new ApolloServer({ schema })
+  const server = new ApolloServer({
+    schema,
+    context: ({ req }) => {
+      const context = {
+        req,
+        user: req.user
+      }
+      return context
+    }
+  })
+
+  app.use('/graphql', authorizeToken)
+
+  app.get('/test', authorizeToken, (req, res) => {
+    res.send({ message: 'Token is found!', user: req.user })
+  })
+
   await server.start()
   server.applyMiddleware({ app })
 
@@ -30,4 +56,9 @@ const bootstrap = async () => {
   console.log(`Listening to port 4000`)
 }
 
-bootstrap()
+const init = async () => {
+  await initRedis()
+  await bootstrap()
+}
+
+init()

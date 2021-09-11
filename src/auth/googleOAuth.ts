@@ -2,9 +2,11 @@ import { Router } from 'express'
 import { OAuth2Client } from 'google-auth-library'
 import { URL } from 'url'
 import { Container } from 'typedi'
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient, User } from '@prisma/client'
+import differenceInSeconds from 'date-fns/differenceInSeconds'
 
 import { GooglePersonResource } from '../types'
+import { generateJWT } from './jwt'
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET
@@ -52,7 +54,7 @@ router.get('/google/callback', async (req, res) => {
     const { data } = await authClient.request<GooglePersonResource>({
       url: 'https://people.googleapis.com/v1/people/me?personFields=names,emailAddresses'
     })
-    const googleId = data.names[0].metadata.source.id
+    const { sub: googleId } = tokenInfo
     const name = data.names[0].displayName
     const email = data.emailAddresses[0].value
 
@@ -60,29 +62,39 @@ router.get('/google/callback', async (req, res) => {
     const prismaClient = Container.get<PrismaClient>('PRISMA_CLIENT')
     const existing = await prismaClient.user.findUnique({ where: { googleId } })
 
+    let user: User
+
     if (existing) {
-      const user = await prismaClient.user.update({
+      user = await prismaClient.user.update({
         where: { googleId },
         data: {
           name,
           email
         }
       })
-      res.send(user)
-      return
+    } else {
+      user = await prismaClient.user.create({
+        data: {
+          name,
+          email,
+          googleId: googleId!
+        }
+      })
     }
-    const user = await prismaClient.user.create({
-      data: {
-        name,
-        email,
-        googleId
-      }
-    })
-    res.send(user)
+
+    const expiresIn = Math.abs(
+      differenceInSeconds(new Date(tokenInfo.expiry_date), new Date())
+    )
+    const jwt = generateJWT(String(user.id), `${expiresIn}s`)
+    console.log(jwt)
+
+    res.send(jwt)
   } catch (e) {
     console.error(e)
     console.error('no code reveiced from google auth')
   }
 })
+
+router.get('/logout', (req, res) => {})
 
 export default router
